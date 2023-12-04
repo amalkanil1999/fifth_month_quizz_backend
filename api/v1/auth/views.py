@@ -5,11 +5,9 @@ from rest_framework.response import Response
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework import permissions, status
 
-from users.models import User
 from .serializers import UserRegisterSerializer, UserLoginSerializer, UserSerializer
 from users.validations import *
 
-import jwt,datetime
 
 
 class UserRegister(APIView):
