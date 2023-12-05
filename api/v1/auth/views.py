@@ -1,54 +1,67 @@
-from django.contrib.auth import login, logout
-from rest_framework.authentication import SessionAuthentication
-from rest_framework.views import APIView
+import requests
+import json
+
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from .serializers import UserRegisterSerializer, UserLoginSerializer, UserSerializer
-from rest_framework import permissions, status
-from users.validations import custom_validation, validate_email, validate_password
+from rest_framework.permissions import AllowAny
+
+from django.contrib.auth.models import User
 
 
-class UserRegister(APIView):
-    permission_classes = (permissions.AllowAny,)
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def create(request):
 
-    def post(self, request):
-        clean_data = custom_validation(request.data)
-        serializer = UserRegisterSerializer(data=clean_data)
-        if serializer.is_valid(raise_exception=True):
-            user = serializer.save()  # This will call the create method in your serializer
-            if user:
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+    email = request.data['email']
+    password = request.data['password']
+    name = request.data['name']
 
+    print("email", email)
+    print("password", password)
+    print("name", name)
 
+    if not User.objects.filter(username=email).exists():
+        
+        user = User.objects.create_user(
+            username=email,
+            password=password,
+            first_name = name,
+        )
 
+        headers = {
+            "Content-Type": "application/json",
+        }
 
-class UserLogin(APIView):
-	permission_classes = (permissions.AllowAny,)
-	authentication_classes = (SessionAuthentication,)
-	##
-	def post(self, request):
-		data = request.data
-		assert validate_email(data)
-		assert validate_password(data)
-		serializer = UserLoginSerializer(data=data)
-		if serializer.is_valid(raise_exception=True):
-			user = serializer.check_user(data)
-			login(request, user)
-			return Response(serializer.data, status=status.HTTP_200_OK)
+        data = {
+            "username": email,
+            "password": password,
+        }
 
+        protocol = "http://"
+        if request.is_secure():
+            protocol = "https://"
 
-class UserLogout(APIView):
-	permission_classes = (permissions.AllowAny,)
-	authentication_classes = (SessionAuthentication,)
-	def post(self, request):
-		logout(request)
-		return Response(status=status.HTTP_200_OK)
+        host = request.get_host()
 
+        url = protocol + host + "/api/v1/auth/token/"
 
-class UserView(APIView):
-	permission_classes = (permissions.IsAuthenticated,)
-	authentication_classes = (SessionAuthentication,)
-	##
-	def get(self, request):
-		serializer = UserSerializer(request.user)
-		return Response({'user': serializer.data}, status=status.HTTP_200_OK)
+        response = requests.post(url, headers=headers, data=json.dumps(data))
+
+        if response.status_code == 200:
+
+            response_data = {
+                "status_code": 6000,
+                "data": response.json(),
+                "message": "Account Created",
+            }
+        else:
+            response_data ={
+                "status_code": 6001,
+                "data": "An error occurred"
+            }
+    else:
+        response_data ={
+            "status_code": 6001,
+            "data": "This account already exists"
+        }
+    return Response(response_data)
