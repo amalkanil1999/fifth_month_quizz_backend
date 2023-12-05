@@ -77,7 +77,7 @@ WSGI_APPLICATION = 'fifth_month_quizz_backend.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': "Questionnaire",
+        'NAME': "questionnaire",
         'USER': "postgres",
         'PASSWORD': "4459",
         'HOST': 'localhost',
@@ -126,6 +126,3 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.SessionAuthentication',
     ),
 }
-
-
-AUTH_USER_MODEL = 'users.AppUser'
